@@ -15,18 +15,21 @@ const GameBoard = () => {
   const intializeGame = () => {
     const totalCards = gridSize * gridSize;
     const pairCount = Math.floor(totalCards / 2);
-    const number = [
+    const numbers = [
       ...Array(pairCount)
         .keys()
         .map((n) => n + 1),
     ];
-    const shuffledCards = [...number, ...number];
-    Math.random(shuffledCards.sort((a, b) => a - b));
+    const shuffledCards = [...numbers, ...numbers]
+      .sort(() => Math.random() - 0.5)
+      .slice(0, totalCards)
+      .map((number, index) => ({ id: index, number }));
+
     setWon(false);
     setCards(shuffledCards);
     setFlipped([]);
     setMatched([]);
-    console.log(number);
+    console.log(numbers);
     console.log(shuffledCards);
   };
 
@@ -47,7 +50,15 @@ const GameBoard = () => {
         value={gridSize}
         onChange={handleGridSizeChange}
       />
-      <div></div>
+      <div className="grid grid-cols-4">
+        {cards.map((card) => {
+          return (
+            <div className="bg-slate-700 m-1 rounded flex items-center justify-center h-[60px]" key={card.id}>
+              {card.number}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };
