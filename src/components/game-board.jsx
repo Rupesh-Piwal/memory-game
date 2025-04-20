@@ -6,6 +6,8 @@ import {
   Settings,
   Award,
   Clock,
+  Medal,
+  Star,
 } from "lucide-react";
 import React, { useEffect, useState, useRef } from "react";
 
@@ -69,8 +71,21 @@ const GameBoard = () => {
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const timerRef = useRef(null);
 
+  // Best scores state
+  const [bestScores, setBestScores] = useState({});
+  const [isNewBestTime, setIsNewBestTime] = useState(false);
+
+  // Load best scores from localStorage on component mount
+  useEffect(() => {
+    const savedBestScores = localStorage.getItem("memoryMatchBestScores");
+    if (savedBestScores) {
+      setBestScores(JSON.parse(savedBestScores));
+    }
+  }, []);
+
   // Format seconds to MM:SS
   const formatTime = (totalSeconds) => {
+    if (totalSeconds === null || totalSeconds === undefined) return "--:--";
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
     return `${minutes.toString().padStart(2, "0")}:${seconds
@@ -108,6 +123,7 @@ const GameBoard = () => {
     setMoves(0);
     setMatchCount(0);
     setIsAnimating(true);
+    setIsNewBestTime(false);
 
     // Reset and stop timer
     setSeconds(0);
@@ -180,17 +196,43 @@ const GameBoard = () => {
     };
   }, [isTimerRunning, won]);
 
+  // Check if game is won and update best time if necessary
   useEffect(() => {
     if (matched.length === cards.length && cards.length > 0) {
       setWon(true);
       setIsTimerRunning(false);
+
+      // Check if this is a new best time for this grid size
+      const gridSizeKey = `grid${gridSize}`;
+      const currentBestTime = bestScores[gridSizeKey];
+
+      if (!currentBestTime || seconds < currentBestTime) {
+        // Update best time
+        const newBestScores = {
+          ...bestScores,
+          [gridSizeKey]: seconds,
+        };
+
+        setBestScores(newBestScores);
+        setIsNewBestTime(true);
+
+        // Save to localStorage
+        localStorage.setItem(
+          "memoryMatchBestScores",
+          JSON.stringify(newBestScores)
+        );
+      }
+
       setShowWinModal(true);
     }
-  }, [matched, cards]);
+  }, [matched, cards, bestScores, gridSize, seconds]);
 
   useEffect(() => {
     initializeGame();
   }, [gridSize]);
+
+  // Get current best time for display
+  const currentBestTime = bestScores[`grid${gridSize}`];
 
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-start bg-gradient-to-br from-indigo-50 via-white to-emerald-50 px-4 sm:px-6 py-5 sm:py-12">
@@ -236,12 +278,21 @@ const GameBoard = () => {
               <Trophy className="w-5 h-5" /> {matchCount}/{cards.length / 2}
             </p>
           </div>
+
+          <div className="text-center px-4 py-3 bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100">
+            <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">
+              Best Time ({gridSize}×{gridSize})
+            </p>
+            <p className="text-2xl font-bold text-amber-600 flex items-center justify-center gap-1">
+              <Medal className="w-5 h-5" /> {formatTime(currentBestTime)}
+            </p>
+          </div>
         </div>
 
         {/* Game Board */}
         <div className="flex flex-col items-center">
           {/* Mobile Controls */}
-          <div className="lg:hidden flex flex-col sm:flex-row justify-between items-center w-full gap-4 mb-6 p-4 bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100">
+          <div className="lg:hidden flex flex-wrap sm:flex-row justify-between items-center w-full gap-4 mb-6 p-4 bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100">
             <div className="w-full">
               <label
                 htmlFor="gridSize"
@@ -265,7 +316,7 @@ const GameBoard = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 w-full flex-wrap justify-center">
               <div className="text-center px-3 py-2 bg-blue-50/80 rounded-lg">
                 <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">
                   Time
@@ -288,6 +339,15 @@ const GameBoard = () => {
                 </p>
                 <p className="text-xl font-bold text-emerald-600">
                   {matchCount}
+                </p>
+              </div>
+
+              <div className="text-center px-3 py-2 bg-amber-50/80 rounded-lg">
+                <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">
+                  Best
+                </p>
+                <p className="text-xl font-bold text-amber-600">
+                  {formatTime(currentBestTime)}
                 </p>
               </div>
             </div>
@@ -349,7 +409,7 @@ const GameBoard = () => {
           {/* Reset Button */}
           <button
             onClick={initializeGame}
-            className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-xl hover:from-indigo-600 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg flex items-center gap-2 text-sm font-medium cursor-pointer"
+            className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-xl hover:from-indigo-600 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg flex items-center gap-2 text-sm font-medium"
           >
             {won ? (
               <>
@@ -364,7 +424,7 @@ const GameBoard = () => {
         </div>
 
         {/* Right Controls - Difficulty */}
-        <div className="hidden lg:flex flex-col w-48">
+        <div className="hidden lg:flex flex-col w-48 gap-4">
           <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100 p-4">
             <label
               htmlFor="gridSize"
@@ -403,20 +463,28 @@ const GameBoard = () => {
               You matched all pairs in{" "}
               <span className="font-bold">{moves}</span> moves!
             </p>
-            <p className="mb-6">
+            <p className="mb-2">
               Time: <span className="font-bold">{formatTime(seconds)}</span>
             </p>
+
+            {isNewBestTime && (
+              <div className="bg-white/20 rounded-lg p-3 mb-4 flex items-center justify-center gap-2">
+                <Star className="w-5 h-5 text-yellow-300 fill-yellow-300" />
+                <p className="font-bold text-white">New Best Time!</p>
+                <Star className="w-5 h-5 text-yellow-300 fill-yellow-300" />
+              </div>
+            )}
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button
                 onClick={initializeGame}
-                className="px-6 py-2 bg-white text-emerald-600 rounded-lg hover:bg-gray-100 transition-all font-medium flex items-center justify-center gap-2 cursor-pointer"
+                className="px-6 py-2 bg-white text-emerald-600 rounded-lg hover:bg-gray-100 transition-all font-medium flex items-center justify-center gap-2"
               >
                 Play Again <RotateCcw className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setShowWinModal(false)}
-                className="px-6 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-all font-medium cursor-pointer"
+                className="px-6 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-all font-medium"
               >
                 View Board
               </button>
