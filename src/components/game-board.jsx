@@ -8,6 +8,8 @@ import {
   Clock,
   Medal,
   Star,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import React, { useEffect, useState, useRef } from "react";
 
@@ -30,6 +32,12 @@ import RPS from "../assets/logos/RPS.png";
 import RR from "../assets/logos/RR.png";
 import SRH from "../assets/logos/SRH.png";
 import questionMark from "../assets/logos/question.png";
+
+// Import sound effects (you'll need to add these files to your project)
+import flipSound from "../assets/sounds/card-flip.mp3";
+import matchSound from "../assets/sounds/match.mp3";
+import winSound from "../assets/sounds/victory.mp3";
+import mismatchSound from "../assets/sounds/error.mp3";
 
 const logoMap = {
   "ASNL.png": ASNL,
@@ -65,6 +73,15 @@ const GameBoard = () => {
   const [matchCount, setMatchCount] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [showWinModal, setShowWinModal] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [showMatchAnimation, setShowMatchAnimation] = useState(false);
+  const [showMismatchAnimation, setShowMismatchAnimation] = useState(false);
+
+  // Audio refs
+  const flipAudioRef = useRef(null);
+  const matchAudioRef = useRef(null);
+  const winAudioRef = useRef(null);
+  const mismatchAudioRef = useRef(null);
 
   // Timer states
   const [seconds, setSeconds] = useState(0);
@@ -75,13 +92,46 @@ const GameBoard = () => {
   const [bestScores, setBestScores] = useState({});
   const [isNewBestTime, setIsNewBestTime] = useState(false);
 
+  // Initialize audio elements
+  useEffect(() => {
+    flipAudioRef.current = new Audio(flipSound);
+    matchAudioRef.current = new Audio(matchSound);
+    winAudioRef.current = new Audio(winSound);
+    mismatchAudioRef.current = new Audio(mismatchSound);
+    
+    // Preload sounds
+    flipAudioRef.current.load();
+    matchAudioRef.current.load();
+    winAudioRef.current.load();
+    mismatchAudioRef.current.load();
+
+    return () => {
+      // Clean up audio elements
+      flipAudioRef.current = null;
+      matchAudioRef.current = null;
+      winAudioRef.current = null;
+      mismatchAudioRef.current = null;
+    };
+  }, []);
+
   // Load best scores from localStorage on component mount
   useEffect(() => {
     const savedBestScores = localStorage.getItem("memoryMatchBestScores");
     if (savedBestScores) {
       setBestScores(JSON.parse(savedBestScores));
     }
+
+    // Check user's sound preference from localStorage
+    const savedSoundPref = localStorage.getItem("memoryMatchSoundPref");
+    if (savedSoundPref !== null) {
+      setSoundEnabled(savedSoundPref === "true");
+    }
   }, []);
+
+  // Save sound preference to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem("memoryMatchSoundPref", soundEnabled);
+  }, [soundEnabled]);
 
   // Format seconds to MM:SS
   const formatTime = (totalSeconds) => {
@@ -91,6 +141,13 @@ const GameBoard = () => {
     return `${minutes.toString().padStart(2, "0")}:${seconds
       .toString()
       .padStart(2, "0")}`;
+  };
+
+  const playSound = (soundRef) => {
+    if (soundEnabled && soundRef.current) {
+      soundRef.current.currentTime = 0; // Rewind to start
+      soundRef.current.play().catch(e => console.log("Audio play failed:", e));
+    }
   };
 
   const handleGridSizeChange = (e) => {
@@ -124,6 +181,8 @@ const GameBoard = () => {
     setMatchCount(0);
     setIsAnimating(true);
     setIsNewBestTime(false);
+    setShowMatchAnimation(false);
+    setShowMismatchAnimation(false);
 
     // Reset and stop timer
     setSeconds(0);
@@ -139,6 +198,11 @@ const GameBoard = () => {
   const checkMatch = (secondId) => {
     const [firstId] = flipped;
     if (cards[firstId].image === cards[secondId].image) {
+      // Match found
+      playSound(matchAudioRef);
+      setShowMatchAnimation(true);
+      setTimeout(() => setShowMatchAnimation(false), 1000);
+      
       setMatched([...matched, firstId, secondId]);
       setMatchCount((prev) => prev + 1);
       setTimeout(() => {
@@ -146,6 +210,11 @@ const GameBoard = () => {
         setDisabled(false);
       }, 300);
     } else {
+      // No match
+      playSound(mismatchAudioRef);
+      setShowMismatchAnimation(true);
+      setTimeout(() => setShowMismatchAnimation(false), 1000);
+      
       setTimeout(() => {
         setFlipped([]);
         setDisabled(false);
@@ -155,6 +224,9 @@ const GameBoard = () => {
 
   const handleClick = (id) => {
     if (disabled || won || flipped.includes(id) || matched.includes(id)) return;
+
+    // Play flip sound
+    playSound(flipAudioRef);
 
     // Start timer on first card click
     if (!isTimerRunning && matched.length === 0 && flipped.length === 0) {
@@ -201,6 +273,7 @@ const GameBoard = () => {
     if (matched.length === cards.length && cards.length > 0) {
       setWon(true);
       setIsTimerRunning(false);
+      playSound(winAudioRef);
 
       // Check if this is a new best time for this grid size
       const gridSizeKey = `grid${gridSize}`;
@@ -287,6 +360,22 @@ const GameBoard = () => {
               <Medal className="w-5 h-5" /> {formatTime(currentBestTime)}
             </p>
           </div>
+
+          {/* Sound Toggle */}
+          <button
+            onClick={() => setSoundEnabled(!soundEnabled)}
+            className="px-4 py-2 bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100 flex items-center justify-center gap-2 text-sm font-medium text-gray-700 hover:bg-indigo-50 transition-colors"
+          >
+            {soundEnabled ? (
+              <>
+                <Volume2 className="w-4 h-4" /> Sound On
+              </>
+            ) : (
+              <>
+                <VolumeX className="w-4 h-4" /> Sound Off
+              </>
+            )}
+          </button>
         </div>
 
         {/* Game Board */}
@@ -350,12 +439,24 @@ const GameBoard = () => {
                   {formatTime(currentBestTime)}
                 </p>
               </div>
+
+              {/* Mobile Sound Toggle */}
+              <button
+                onClick={() => setSoundEnabled(!soundEnabled)}
+                className="text-center px-3 py-2 bg-gray-50/80 rounded-lg flex items-center justify-center"
+              >
+                {soundEnabled ? (
+                  <Volume2 className="w-5 h-5 text-indigo-600" />
+                ) : (
+                  <VolumeX className="w-5 h-5 text-gray-600" />
+                )}
+              </button>
             </div>
           </div>
 
           {/* Game Grid */}
           <div
-            className={`grid gap-3 sm:gap-4 mb-6 transition-all duration-300 ${
+            className={`grid gap-3 sm:gap-4 mb-6 transition-all duration-300 relative ${
               isAnimating ? "opacity-50 scale-95" : "opacity-100 scale-100"
             }`}
             style={{
@@ -363,26 +464,42 @@ const GameBoard = () => {
               width: `min(100%, ${gridSize * 5.5}rem)`,
             }}
           >
+            {/* Match Animation */}
+            {showMatchAnimation && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></div>
+                <div className="relative inline-flex rounded-full h-full w-full bg-emerald-500/20"></div>
+              </div>
+            )}
+
+            {/* Mismatch Animation */}
+            {showMismatchAnimation && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></div>
+                <div className="relative inline-flex rounded-full h-full w-full bg-red-500/20"></div>
+              </div>
+            )}
+
             {cards.map((card) => (
               <div
                 key={card.id}
                 onClick={() => handleClick(card.id)}
-                className={`aspect-square flex items-center justify-center rounded-2xl cursor-pointer transition-transform duration-300 ease-in-out
-                  ${
-                    isFlipped(card.id)
-                      ? isSolved(card.id)
-                        ? "bg-gradient-to-br from-emerald-300 via-emerald-500 to-emerald-700 shadow-emerald-300 shadow-inner"
-                        : "bg-gradient-to-br from-indigo-300 via-indigo-500 to-indigo-700 shadow-indigo-300 shadow-inner"
-                      : "bg-gradient-to-br from-white via-gray-50 to-gray-100 border border-gray-200 hover:shadow-xl hover:border-indigo-300"
-                  }
-                  ${
-                    flipped.includes(card.id)
-                      ? "rotate-y-180"
-                      : matched.includes(card.id)
-                      ? "scale-95"
-                      : "hover:scale-[1.04]"
-                  }
-                `}
+                className={`aspect-square flex items-center justify-center rounded-2xl cursor-pointer transition-transform duration-300 ease-in-out relative
+                    ${
+                      isFlipped(card.id)
+                        ? isSolved(card.id)
+                          ? "bg-gradient-to-br from-emerald-300 via-emerald-500 to-emerald-700 shadow-emerald-300 shadow-inner"
+                          : "bg-gradient-to-br from-indigo-300 via-indigo-500 to-indigo-700 shadow-indigo-300 shadow-inner"
+                        : "bg-gradient-to-br from-white via-gray-50 to-gray-100 border border-gray-200 hover:shadow-xl hover:border-indigo-300"
+                    }
+                    ${
+                      flipped.includes(card.id)
+                        ? "rotate-y-180"
+                        : matched.includes(card.id)
+                        ? "scale-95"
+                        : "hover:scale-[1.04]"
+                    }
+                  `}
               >
                 <div className="relative w-full h-full flex items-center justify-center">
                   <img
