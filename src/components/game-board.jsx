@@ -33,7 +33,7 @@ import RR from "../assets/logos/RR.png";
 import SRH from "../assets/logos/SRH.png";
 import questionMark from "../assets/logos/question.png";
 
-// Import sound effects (you'll need to add these files to your project)
+
 import flipSound from "../assets/sounds/card-flip.mp3";
 import matchSound from "../assets/sounds/match.mp3";
 import winSound from "../assets/sounds/victory.mp3";
@@ -77,36 +77,36 @@ const GameBoard = () => {
   const [showMatchAnimation, setShowMatchAnimation] = useState(false);
   const [showMismatchAnimation, setShowMismatchAnimation] = useState(false);
 
-  // Audio refs
+  
   const flipAudioRef = useRef(null);
   const matchAudioRef = useRef(null);
   const winAudioRef = useRef(null);
   const mismatchAudioRef = useRef(null);
 
-  // Timer states
+  
   const [seconds, setSeconds] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const timerRef = useRef(null);
 
-  // Best scores state
+ 
   const [bestScores, setBestScores] = useState({});
   const [isNewBestTime, setIsNewBestTime] = useState(false);
 
-  // Initialize audio elements
+
   useEffect(() => {
     flipAudioRef.current = new Audio(flipSound);
     matchAudioRef.current = new Audio(matchSound);
     winAudioRef.current = new Audio(winSound);
     mismatchAudioRef.current = new Audio(mismatchSound);
+
     
-    // Preload sounds
     flipAudioRef.current.load();
     matchAudioRef.current.load();
     winAudioRef.current.load();
     mismatchAudioRef.current.load();
 
     return () => {
-      // Clean up audio elements
+      
       flipAudioRef.current = null;
       matchAudioRef.current = null;
       winAudioRef.current = null;
@@ -114,26 +114,23 @@ const GameBoard = () => {
     };
   }, []);
 
-  // Load best scores from localStorage on component mount
   useEffect(() => {
     const savedBestScores = localStorage.getItem("memoryMatchBestScores");
     if (savedBestScores) {
       setBestScores(JSON.parse(savedBestScores));
     }
 
-    // Check user's sound preference from localStorage
     const savedSoundPref = localStorage.getItem("memoryMatchSoundPref");
     if (savedSoundPref !== null) {
       setSoundEnabled(savedSoundPref === "true");
     }
   }, []);
 
-  // Save sound preference to localStorage when it changes
   useEffect(() => {
     localStorage.setItem("memoryMatchSoundPref", soundEnabled);
   }, [soundEnabled]);
 
-  // Format seconds to MM:SS
+
   const formatTime = (totalSeconds) => {
     if (totalSeconds === null || totalSeconds === undefined) return "--:--";
     const minutes = Math.floor(totalSeconds / 60);
@@ -145,8 +142,10 @@ const GameBoard = () => {
 
   const playSound = (soundRef) => {
     if (soundEnabled && soundRef.current) {
-      soundRef.current.currentTime = 0; // Rewind to start
-      soundRef.current.play().catch(e => console.log("Audio play failed:", e));
+      soundRef.current.currentTime = 0; 
+      soundRef.current
+        .play()
+        .catch((e) => console.log("Audio play failed:", e));
     }
   };
 
@@ -184,7 +183,7 @@ const GameBoard = () => {
     setShowMatchAnimation(false);
     setShowMismatchAnimation(false);
 
-    // Reset and stop timer
+   
     setSeconds(0);
     setIsTimerRunning(false);
     if (timerRef.current) {
@@ -198,11 +197,11 @@ const GameBoard = () => {
   const checkMatch = (secondId) => {
     const [firstId] = flipped;
     if (cards[firstId].image === cards[secondId].image) {
-      // Match found
+     
       playSound(matchAudioRef);
       setShowMatchAnimation(true);
       setTimeout(() => setShowMatchAnimation(false), 1000);
-      
+
       setMatched([...matched, firstId, secondId]);
       setMatchCount((prev) => prev + 1);
       setTimeout(() => {
@@ -210,11 +209,11 @@ const GameBoard = () => {
         setDisabled(false);
       }, 300);
     } else {
-      // No match
+
       playSound(mismatchAudioRef);
       setShowMismatchAnimation(true);
       setTimeout(() => setShowMismatchAnimation(false), 1000);
-      
+
       setTimeout(() => {
         setFlipped([]);
         setDisabled(false);
@@ -225,10 +224,10 @@ const GameBoard = () => {
   const handleClick = (id) => {
     if (disabled || won || flipped.includes(id) || matched.includes(id)) return;
 
-    // Play flip sound
+    
     playSound(flipAudioRef);
 
-    // Start timer on first card click
+
     if (!isTimerRunning && matched.length === 0 && flipped.length === 0) {
       setIsTimerRunning(true);
     }
@@ -251,7 +250,7 @@ const GameBoard = () => {
   const isFlipped = (id) => flipped.includes(id) || matched.includes(id);
   const isSolved = (id) => matched.includes(id);
 
-  // Handle timer
+
   useEffect(() => {
     if (isTimerRunning && !won) {
       timerRef.current = setInterval(() => {
@@ -268,19 +267,19 @@ const GameBoard = () => {
     };
   }, [isTimerRunning, won]);
 
-  // Check if game is won and update best time if necessary
+ 
   useEffect(() => {
     if (matched.length === cards.length && cards.length > 0) {
       setWon(true);
       setIsTimerRunning(false);
       playSound(winAudioRef);
 
-      // Check if this is a new best time for this grid size
+      
       const gridSizeKey = `grid${gridSize}`;
       const currentBestTime = bestScores[gridSizeKey];
 
       if (!currentBestTime || seconds < currentBestTime) {
-        // Update best time
+        
         const newBestScores = {
           ...bestScores,
           [gridSizeKey]: seconds,
@@ -289,7 +288,6 @@ const GameBoard = () => {
         setBestScores(newBestScores);
         setIsNewBestTime(true);
 
-        // Save to localStorage
         localStorage.setItem(
           "memoryMatchBestScores",
           JSON.stringify(newBestScores)
@@ -304,12 +302,12 @@ const GameBoard = () => {
     initializeGame();
   }, [gridSize]);
 
-  // Get current best time for display
+  
   const currentBestTime = bestScores[`grid${gridSize}`];
 
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-start bg-gradient-to-br from-indigo-50 via-white to-emerald-50 px-4 sm:px-6 py-5 sm:py-12">
-      {/* Header */}
+      
       <div className="flex flex-col items-center mb-8 w-full max-w-4xl">
         <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-2 tracking-tighter">
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-emerald-700">
@@ -321,9 +319,9 @@ const GameBoard = () => {
         </p>
       </div>
 
-      {/* Game Container */}
+      
       <div className="flex flex-col lg:flex-row items-center justify-center gap-6 w-full max-w-6xl">
-        {/* Left Controls - Matches, Moves & Timer */}
+    
         <div className="hidden lg:flex flex-col gap-4 w-48">
           <div className="text-center px-4 py-3 bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100">
             <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">
@@ -361,7 +359,7 @@ const GameBoard = () => {
             </p>
           </div>
 
-          {/* Sound Toggle */}
+          
           <button
             onClick={() => setSoundEnabled(!soundEnabled)}
             className="px-4 py-2 bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100 flex items-center justify-center gap-2 text-sm font-medium text-gray-700 hover:bg-indigo-50 transition-colors"
@@ -378,9 +376,8 @@ const GameBoard = () => {
           </button>
         </div>
 
-        {/* Game Board */}
         <div className="flex flex-col items-center">
-          {/* Mobile Controls */}
+         
           <div className="lg:hidden flex flex-wrap sm:flex-row justify-between items-center w-full gap-4 mb-6 p-4 bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100">
             <div className="w-full">
               <label
@@ -440,7 +437,7 @@ const GameBoard = () => {
                 </p>
               </div>
 
-              {/* Mobile Sound Toggle */}
+              
               <button
                 onClick={() => setSoundEnabled(!soundEnabled)}
                 className="text-center px-3 py-2 bg-gray-50/80 rounded-lg flex items-center justify-center"
@@ -454,7 +451,7 @@ const GameBoard = () => {
             </div>
           </div>
 
-          {/* Game Grid */}
+        
           <div
             className={`grid gap-3 sm:gap-4 mb-6 transition-all duration-300 relative ${
               isAnimating ? "opacity-50 scale-95" : "opacity-100 scale-100"
@@ -464,7 +461,7 @@ const GameBoard = () => {
               width: `min(100%, ${gridSize * 5.5}rem)`,
             }}
           >
-            {/* Match Animation */}
+          
             {showMatchAnimation && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></div>
@@ -472,7 +469,6 @@ const GameBoard = () => {
               </div>
             )}
 
-            {/* Mismatch Animation */}
             {showMismatchAnimation && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></div>
@@ -523,7 +519,7 @@ const GameBoard = () => {
             ))}
           </div>
 
-          {/* Reset Button */}
+          
           <button
             onClick={initializeGame}
             className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-xl hover:from-indigo-600 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg flex items-center gap-2 text-sm font-medium"
@@ -540,7 +536,7 @@ const GameBoard = () => {
           </button>
         </div>
 
-        {/* Right Controls - Difficulty */}
+     
         <div className="hidden lg:flex flex-col w-48 gap-4">
           <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100 p-4">
             <label
@@ -566,8 +562,7 @@ const GameBoard = () => {
           </div>
         </div>
       </div>
-
-      {/* Win Modal */}
+     
       {showWinModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm animate-fade-in">
           <div className="relative bg-gradient-to-br from-emerald-400 to-teal-600 text-white rounded-2xl shadow-2xl p-8 max-w-md mx-4 text-center animate-scale-in">
