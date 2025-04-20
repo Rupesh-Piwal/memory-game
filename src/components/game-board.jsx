@@ -8,7 +8,6 @@ import {
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
-// Import all team logos statically
 import ASNL from "../assets/logos/ASNL.png";
 import CHSE from "../assets/logos/CHSE.png";
 import CSK from "../assets/logos/CSK.png";
@@ -29,7 +28,6 @@ import RR from "../assets/logos/RR.png";
 import SRH from "../assets/logos/SRH.png";
 import questionMark from "../assets/logos/question.png";
 
-// Map for image lookup
 const logoMap = {
   "ASNL.png": ASNL,
   "CHSE.png": CHSE,
@@ -51,7 +49,6 @@ const logoMap = {
   "SRH.png": SRH,
 };
 
-// List of image filenames
 const teamLogos = Object.keys(logoMap);
 
 const GameBoard = () => {
@@ -149,122 +146,145 @@ const GameBoard = () => {
   }, [gridSize]);
 
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-start bg-gradient-to-br from-indigo-50 via-white to-emerald-50 px-4 sm:px-6 py-8 sm:py-12">
-      <div className="w-full max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="flex flex-col items-center mb-8">
-          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-2 tracking-tighter">
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-emerald-600">
-              Memory Match
-            </span>
-          </h1>
-          <p className="text-gray-500 text-sm sm:text-base flex items-center gap-1">
-            <Award className="w-4 h-4" /> Match all pairs to win
-          </p>
-        </div>
+    <div className="min-h-screen w-full flex flex-col items-center justify-start bg-gradient-to-br from-indigo-50 via-white to-emerald-50 px-4 sm:px-6 py-5 sm:py-12">
+      {/* Header */}
+      <div className="flex flex-col items-center mb-8 w-full max-w-4xl">
+        <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-2 tracking-tighter">
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-emerald-700">
+            Memory Match
+          </span>
+        </h1>
+        <p className="text-gray-500 text-sm sm:text-base flex items-center gap-1">
+          <Award className="w-4 h-4" /> Match all pairs to win
+        </p>
+      </div>
 
-        {/* Control Panel */}
-        <div className="flex flex-col sm:flex-row justify-between items-center w-full gap-4 sm:gap-8 mb-8 p-4 sm:p-6 bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100">
-          <div className="w-full sm:w-auto">
-            <label
-              htmlFor="gridSize"
-              className="flex items-center gap-2 text-xs font-medium text-gray-500 uppercase tracking-wider mb-2"
-            >
-              <Settings className="w-4 h-4" /> Difficulty
-            </label>
-            <div className="flex items-center gap-4">
-              <input
-                className="w-full h-2 bg-gray-100 rounded-full appearance-none cursor-pointer accent-indigo-500"
-                type="range"
-                id="gridSize"
-                min={2}
-                max={6}
-                value={gridSize}
-                onChange={handleGridSizeChange}
-              />
-              <span className="text-sm font-medium text-gray-700 min-w-[40px]">
-                {gridSize}×{gridSize}
-              </span>
-            </div>
+      {/* Game Container */}
+      <div className="flex flex-col lg:flex-row items-center justify-center gap-6 w-full max-w-6xl">
+        {/* Left Controls - Matches & Moves */}
+        <div className="hidden lg:flex flex-col gap-4 w-48">
+          <div className="text-center px-4 py-3 bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100">
+            <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">
+              Moves
+            </p>
+            <p className="text-2xl font-bold text-indigo-600 flex items-center justify-center gap-1">
+              <Gauge className="w-5 h-5" /> {moves}
+            </p>
           </div>
 
-          <div className="flex items-center gap-4 sm:gap-6">
-            <div className="text-center px-4 py-2 bg-indigo-50/80 hover:bg-indigo-100/80 transition-colors rounded-lg">
-              <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">
-                Moves
-              </p>
-              <p className="text-xl font-bold text-indigo-600 flex items-center gap-1">
-                <Gauge className="w-4 h-4" /> {moves}
-              </p>
-            </div>
-
-            <div className="text-center px-4 py-2 bg-emerald-50/80 hover:bg-emerald-100/80 transition-colors rounded-lg">
-              <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">
-                Matches
-              </p>
-              <p className="text-xl font-bold text-emerald-600 flex items-center gap-1">
-                <Trophy className="w-4 h-4" /> {matchCount}/{cards.length / 2}
-              </p>
-            </div>
+          <div className="text-center px-4 py-3 bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100">
+            <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">
+              Matches
+            </p>
+            <p className="text-2xl font-bold text-emerald-600 flex items-center justify-center gap-1">
+              <Trophy className="w-5 h-5" /> {matchCount}/{cards.length / 2}
+            </p>
           </div>
         </div>
 
-        {/* Game Grid */}
-        <div
-          className={`grid gap-3 sm:gap-4 mb-8 transition-all duration-300 ${
-            isAnimating ? "opacity-50 scale-95" : "opacity-100 scale-100"
-          }`}
-          style={{
-            gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))`,
-            width: `min(100%, ${gridSize * 5.5}rem)`,
-            margin: "0 auto",
-          }}
-        >
-          {cards.map((card) => (
-            <div
-              key={card.id}
-              onClick={() => handleClick(card.id)}
-              className={`aspect-square flex items-center justify-center rounded-2xl cursor-pointer transition-transform duration-300 ease-in-out perspective-1000
-    ${
-      isFlipped(card.id)
-        ? isSolved(card.id)
-          ? "bg-gradient-to-br from-emerald-300 via-emerald-500 to-emerald-700 shadow-emerald-300 shadow-inner"
-          : "bg-gradient-to-br from-indigo-300 via-indigo-500 to-indigo-700 shadow-indigo-300 shadow-inner"
-        : "bg-gradient-to-br from-white via-gray-50 to-gray-100 border border-gray-200 hover:shadow-xl hover:border-indigo-300"
-    }
-    ${
-      flipped.includes(card.id)
-        ? "rotate-y-180"
-        : matched.includes(card.id)
-        ? "scale-95"
-        : "hover:scale-[1.04]"
-    }
-  `}
-            >
-              <div className="relative w-full h-full flex items-center justify-center">
-                <img
-                  src={isFlipped(card.id) ? logoMap[card.image] : questionMark}
-                  alt={
-                    isFlipped(card.id)
-                      ? card.image.split(".")[0]
-                      : "hidden-logo"
-                  }
-                  className={`w-3/4 h-3/4 object-contain transition-all duration-300 ${
-                    isFlipped(card.id) ? "opacity-100" : "opacity-90"
-                  }`}
+        {/* Game Board */}
+        <div className="flex flex-col items-center">
+          {/* Mobile Controls */}
+          <div className="lg:hidden flex flex-col sm:flex-row justify-between items-center w-full gap-4 mb-6 p-4 bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100">
+            <div className="w-full">
+              <label
+                htmlFor="gridSize"
+                className="flex items-center gap-2 text-xs font-medium text-gray-500 uppercase tracking-wider mb-2"
+              >
+                <Settings className="w-4 h-4" /> Difficulty
+              </label>
+              <div className="flex items-center gap-4">
+                <input
+                  className="w-full h-2 bg-gray-100 rounded-full appearance-none cursor-pointer accent-indigo-500"
+                  type="range"
+                  id="gridSize"
+                  min={2}
+                  max={6}
+                  value={gridSize}
+                  onChange={handleGridSizeChange}
                 />
-                {!isFlipped(card.id) && (
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/80 to-gray-100/30 rounded-xl mix-blend-overlay" />
-                )}
+                <span className="text-sm font-medium text-gray-700 min-w-[40px]">
+                  {gridSize}×{gridSize}
+                </span>
               </div>
             </div>
-          ))}
-        </div>
 
-        <div className="flex justify-center">
+            <div className="flex items-center gap-4">
+              <div className="text-center px-4 py-2 bg-indigo-50/80 rounded-lg">
+                <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">
+                  Moves
+                </p>
+                <p className="text-xl font-bold text-indigo-600">{moves}</p>
+              </div>
+
+              <div className="text-center px-4 py-2 bg-emerald-50/80 rounded-lg">
+                <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">
+                  Matches
+                </p>
+                <p className="text-xl font-bold text-emerald-600">
+                  {matchCount}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Game Grid */}
+          <div
+            className={`grid gap-3 sm:gap-4 mb-6 transition-all duration-300 ${
+              isAnimating ? "opacity-50 scale-95" : "opacity-100 scale-100"
+            }`}
+            style={{
+              gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))`,
+              width: `min(100%, ${gridSize * 5.5}rem)`,
+            }}
+          >
+            {cards.map((card) => (
+              <div
+                key={card.id}
+                onClick={() => handleClick(card.id)}
+                className={`aspect-square flex items-center justify-center rounded-2xl cursor-pointer transition-transform duration-300 ease-in-out
+                  ${
+                    isFlipped(card.id)
+                      ? isSolved(card.id)
+                        ? "bg-gradient-to-br from-emerald-300 via-emerald-500 to-emerald-700 shadow-emerald-300 shadow-inner"
+                        : "bg-gradient-to-br from-indigo-300 via-indigo-500 to-indigo-700 shadow-indigo-300 shadow-inner"
+                      : "bg-gradient-to-br from-white via-gray-50 to-gray-100 border border-gray-200 hover:shadow-xl hover:border-indigo-300"
+                  }
+                  ${
+                    flipped.includes(card.id)
+                      ? "rotate-y-180"
+                      : matched.includes(card.id)
+                      ? "scale-95"
+                      : "hover:scale-[1.04]"
+                  }
+                `}
+              >
+                <div className="relative w-full h-full flex items-center justify-center">
+                  <img
+                    src={
+                      isFlipped(card.id) ? logoMap[card.image] : questionMark
+                    }
+                    alt={
+                      isFlipped(card.id)
+                        ? card.image.split(".")[0]
+                        : "hidden-logo"
+                    }
+                    className={`w-3/4 h-3/4 object-contain transition-all duration-300 ${
+                      isFlipped(card.id) ? "opacity-100" : "opacity-90"
+                    }`}
+                  />
+                  {!isFlipped(card.id) && (
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/80 to-gray-100/30 rounded-xl mix-blend-overlay" />
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Reset Button */}
           <button
             onClick={initializeGame}
-            className="px-6 py-3 mt-6 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-xl hover:from-indigo-600 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg flex items-center gap-2 text-sm font-medium cursor-pointer"
+            className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-xl hover:from-indigo-600 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg flex items-center gap-2 text-sm font-medium"
           >
             {won ? (
               <>
@@ -278,38 +298,64 @@ const GameBoard = () => {
           </button>
         </div>
 
-        {/* Win Modal */}
-        {showWinModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm animate-fade-in">
-            <div className="relative bg-gradient-to-br from-emerald-400 to-teal-600 text-white rounded-2xl shadow-2xl p-8 max-w-md mx-4 text-center animate-scale-in">
-              <div className="absolute -top-4 -right-4 bg-yellow-400 text-yellow-800 rounded-full w-10 h-10 flex items-center justify-center shadow-lg">
-                <Trophy className="w-6 h-6" />
-              </div>
-
-              <h3 className="text-2xl font-bold mb-2">Congratulations!</h3>
-              <p className="mb-6">
-                You matched all pairs in{" "}
-                <span className="font-bold">{moves}</span> moves!
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <button
-                  onClick={initializeGame}
-                  className="px-6 py-2 bg-white text-emerald-600 rounded-lg hover:bg-gray-100 transition-all font-medium flex items-center justify-center gap-2"
-                >
-                  Play Again <RotateCcw className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setShowWinModal(false)}
-                  className="px-6 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-all font-medium"
-                >
-                  View Board
-                </button>
-              </div>
+        {/* Right Controls - Difficulty */}
+        <div className="hidden lg:flex flex-col w-48">
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100 p-4">
+            <label
+              htmlFor="gridSize"
+              className="flex items-center gap-2 text-xs font-medium text-gray-500 uppercase tracking-wider mb-2"
+            >
+              <Settings className="w-4 h-4" /> Difficulty
+            </label>
+            <div className="flex flex-col items-center gap-2">
+              <input
+                className="w-full h-2 bg-gray-100 rounded-full appearance-none cursor-pointer accent-indigo-500"
+                type="range"
+                id="gridSize"
+                min={2}
+                max={6}
+                value={gridSize}
+                onChange={handleGridSizeChange}
+              />
+              <span className="text-sm font-medium text-gray-700">
+                {gridSize}×{gridSize} Grid
+              </span>
             </div>
           </div>
-        )}
+        </div>
       </div>
+
+      {/* Win Modal */}
+      {showWinModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm animate-fade-in">
+          <div className="relative bg-gradient-to-br from-emerald-400 to-teal-600 text-white rounded-2xl shadow-2xl p-8 max-w-md mx-4 text-center animate-scale-in">
+            <div className="absolute -top-4 -right-4 bg-yellow-400 text-yellow-800 rounded-full w-10 h-10 flex items-center justify-center shadow-lg">
+              <Trophy className="w-6 h-6" />
+            </div>
+
+            <h3 className="text-2xl font-bold mb-2">Congratulations!</h3>
+            <p className="mb-6">
+              You matched all pairs in{" "}
+              <span className="font-bold">{moves}</span> moves!
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                onClick={initializeGame}
+                className="px-6 py-2 bg-white text-emerald-600 rounded-lg hover:bg-gray-100 transition-all font-medium flex items-center justify-center gap-2"
+              >
+                Play Again <RotateCcw className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setShowWinModal(false)}
+                className="px-6 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-all font-medium"
+              >
+                View Board
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
