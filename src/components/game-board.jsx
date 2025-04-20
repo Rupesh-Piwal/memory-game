@@ -5,8 +5,9 @@ import {
   Gauge,
   Settings,
   Award,
+  Clock,
 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 
 import ASNL from "../assets/logos/ASNL.png";
 import CHSE from "../assets/logos/CHSE.png";
@@ -63,6 +64,20 @@ const GameBoard = () => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [showWinModal, setShowWinModal] = useState(false);
 
+  // Timer states
+  const [seconds, setSeconds] = useState(0);
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const timerRef = useRef(null);
+
+  // Format seconds to MM:SS
+  const formatTime = (totalSeconds) => {
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes.toString().padStart(2, "0")}:${seconds
+      .toString()
+      .padStart(2, "0")}`;
+  };
+
   const handleGridSizeChange = (e) => {
     const size = parseInt(e.target.value);
     if (size >= 2 && size <= 6) {
@@ -93,6 +108,15 @@ const GameBoard = () => {
     setMoves(0);
     setMatchCount(0);
     setIsAnimating(true);
+
+    // Reset and stop timer
+    setSeconds(0);
+    setIsTimerRunning(false);
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+
     setTimeout(() => setIsAnimating(false), 300);
   };
 
@@ -116,6 +140,11 @@ const GameBoard = () => {
   const handleClick = (id) => {
     if (disabled || won || flipped.includes(id) || matched.includes(id)) return;
 
+    // Start timer on first card click
+    if (!isTimerRunning && matched.length === 0 && flipped.length === 0) {
+      setIsTimerRunning(true);
+    }
+
     if (flipped.length === 0) {
       setFlipped([id]);
     } else if (flipped.length === 1) {
@@ -134,9 +163,27 @@ const GameBoard = () => {
   const isFlipped = (id) => flipped.includes(id) || matched.includes(id);
   const isSolved = (id) => matched.includes(id);
 
+  // Handle timer
+  useEffect(() => {
+    if (isTimerRunning && !won) {
+      timerRef.current = setInterval(() => {
+        setSeconds((prev) => prev + 1);
+      }, 1000);
+    } else if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [isTimerRunning, won]);
+
   useEffect(() => {
     if (matched.length === cards.length && cards.length > 0) {
       setWon(true);
+      setIsTimerRunning(false);
       setShowWinModal(true);
     }
   }, [matched, cards]);
@@ -161,8 +208,17 @@ const GameBoard = () => {
 
       {/* Game Container */}
       <div className="flex flex-col lg:flex-row items-center justify-center gap-6 w-full max-w-6xl">
-        {/* Left Controls - Matches & Moves */}
+        {/* Left Controls - Matches, Moves & Timer */}
         <div className="hidden lg:flex flex-col gap-4 w-48">
+          <div className="text-center px-4 py-3 bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100">
+            <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">
+              Time
+            </p>
+            <p className="text-2xl font-bold text-blue-600 flex items-center justify-center gap-1">
+              <Clock className="w-5 h-5" /> {formatTime(seconds)}
+            </p>
+          </div>
+
           <div className="text-center px-4 py-3 bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100">
             <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">
               Moves
@@ -209,15 +265,24 @@ const GameBoard = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
-              <div className="text-center px-4 py-2 bg-indigo-50/80 rounded-lg">
+            <div className="flex items-center gap-3">
+              <div className="text-center px-3 py-2 bg-blue-50/80 rounded-lg">
+                <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">
+                  Time
+                </p>
+                <p className="text-xl font-bold text-blue-600">
+                  {formatTime(seconds)}
+                </p>
+              </div>
+
+              <div className="text-center px-3 py-2 bg-indigo-50/80 rounded-lg">
                 <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">
                   Moves
                 </p>
                 <p className="text-xl font-bold text-indigo-600">{moves}</p>
               </div>
 
-              <div className="text-center px-4 py-2 bg-emerald-50/80 rounded-lg">
+              <div className="text-center px-3 py-2 bg-emerald-50/80 rounded-lg">
                 <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">
                   Matches
                 </p>
@@ -284,7 +349,7 @@ const GameBoard = () => {
           {/* Reset Button */}
           <button
             onClick={initializeGame}
-            className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-xl hover:from-indigo-600 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg flex items-center gap-2 text-sm font-medium"
+            className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-xl hover:from-indigo-600 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg flex items-center gap-2 text-sm font-medium cursor-pointer"
           >
             {won ? (
               <>
@@ -334,21 +399,24 @@ const GameBoard = () => {
             </div>
 
             <h3 className="text-2xl font-bold mb-2">Congratulations!</h3>
-            <p className="mb-6">
+            <p className="mb-1">
               You matched all pairs in{" "}
               <span className="font-bold">{moves}</span> moves!
+            </p>
+            <p className="mb-6">
+              Time: <span className="font-bold">{formatTime(seconds)}</span>
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button
                 onClick={initializeGame}
-                className="px-6 py-2 bg-white text-emerald-600 rounded-lg hover:bg-gray-100 transition-all font-medium flex items-center justify-center gap-2"
+                className="px-6 py-2 bg-white text-emerald-600 rounded-lg hover:bg-gray-100 transition-all font-medium flex items-center justify-center gap-2 cursor-pointer"
               >
                 Play Again <RotateCcw className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setShowWinModal(false)}
-                className="px-6 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-all font-medium"
+                className="px-6 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-all font-medium cursor-pointer"
               >
                 View Board
               </button>
