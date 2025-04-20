@@ -224,19 +224,22 @@ const GameBoard = () => {
             <div
               key={card.id}
               onClick={() => handleClick(card.id)}
-              className={`aspect-square flex items-center justify-center rounded-xl cursor-pointer transition-all duration-300 transform ${
-                isFlipped(card.id)
-                  ? isSolved(card.id)
-                    ? "bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-lg shadow-emerald-200/50"
-                    : "bg-gradient-to-br from-indigo-400 to-indigo-600 shadow-lg shadow-indigo-200/50"
-                  : "bg-white border border-gray-200 hover:border-indigo-300 hover:shadow-md"
-              } ${
-                flipped.includes(card.id)
-                  ? "rotate-y-180"
-                  : matched.includes(card.id)
-                  ? "scale-95"
-                  : "hover:scale-[1.02]"
-              }`}
+              className={`aspect-square flex items-center justify-center rounded-2xl cursor-pointer transition-transform duration-300 ease-in-out perspective-1000
+    ${
+      isFlipped(card.id)
+        ? isSolved(card.id)
+          ? "bg-gradient-to-br from-emerald-300 via-emerald-500 to-emerald-700 shadow-emerald-300 shadow-inner"
+          : "bg-gradient-to-br from-indigo-300 via-indigo-500 to-indigo-700 shadow-indigo-300 shadow-inner"
+        : "bg-gradient-to-br from-white via-gray-50 to-gray-100 border border-gray-200 hover:shadow-xl hover:border-indigo-300"
+    }
+    ${
+      flipped.includes(card.id)
+        ? "rotate-y-180"
+        : matched.includes(card.id)
+        ? "scale-95"
+        : "hover:scale-[1.04]"
+    }
+  `}
             >
               <div className="relative w-full h-full flex items-center justify-center">
                 <img
@@ -258,11 +261,10 @@ const GameBoard = () => {
           ))}
         </div>
 
-        {/* Reset Button */}
         <div className="flex justify-center">
           <button
             onClick={initializeGame}
-            className="px-6 py-3 mt-6 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-xl hover:from-indigo-600 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg flex items-center gap-2 text-sm font-medium"
+            className="px-6 py-3 mt-6 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-xl hover:from-indigo-600 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg flex items-center gap-2 text-sm font-medium cursor-pointer"
           >
             {won ? (
               <>
